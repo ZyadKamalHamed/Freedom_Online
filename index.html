@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FREEDOM Studio (Hosted)</title>
+    
+    <!-- HOSTED CONFIG LOADING (Points to Vercel API) -->
+    <script src="/api/config"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- ... (ALL CSS AND TAILWIND CONFIG IS SAME AS LOCAL VERSION) ... -->
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Space Grotesk', 'sans-serif'] }, colors: { banana: { 900: '#000000' } } } } }
+    </script>
+    <style>
+        body { background-color: #0a0a0a; color: #e5e5e5; }
+        .glass-panel { background: rgba(20, 20, 20, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.15); }
+        .loader { border: 3px solid #333; border-top: 3px solid #FFFFFF; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .mode-active { background-color: #FFFFFF; color: #000000; font-weight: bold; }
+        .mode-inactive { background-color: #262626; color: #888; }
+    </style>
+</head>
+<!-- ... (ALL BODY HTML IS IDENTICAL TO LOCAL VERSION, COPY IT FROM ABOVE) ... -->
+<body class="h-screen flex flex-col overflow-hidden font-sans">
+    <!-- Header -->
+    <header class="h-16 border-b border-gray-800 bg-black flex items-center justify-between px-6 shrink-0 z-10">
+        <div class="flex items-center gap-3 select-none" onclick="handleDevReset(event)" title="Triple click to reset credits">
+            <div class="w-8 h-8 bg-white rounded flex items-center justify-center text-black font-bold text-xl"><i class="fa-solid fa-feather-pointed"></i></div>
+            <h1 class="text-xl font-bold tracking-widest text-white uppercase">FREEDOM</h1>
+            <span class="bg-gray-800 text-xs px-2 py-0.5 rounded text-gray-400 border border-gray-700">Cloud</span>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="flex flex-col items-end">
+                <div class="flex items-center gap-2 text-[10px] text-gray-400 uppercase tracking-wider mb-1">
+                    <span>Daily Video Limit</span><span id="daily-limit-text" class="text-white font-bold">0/10</span>
+                </div>
+                <div class="w-24 h-1.5 bg-gray-800 rounded-full overflow-hidden"><div id="daily-limit-bar" class="h-full bg-blue-500 w-0 transition-all duration-500"></div></div>
+            </div>
+            <div class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 flex items-center gap-3">
+                <div class="text-right"><p class="text-[10px] text-gray-400 uppercase tracking-wider">Balance</p><p id="credit-balance" class="text-sm font-bold text-white font-mono">0</p></div>
+                <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-black"><i class="fa-solid fa-coins"></i></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex flex-1 overflow-hidden">
+        <aside class="w-80 bg-black border-r border-gray-800 flex flex-col p-4 gap-6 overflow-y-auto z-10">
+            <div class="grid grid-cols-2 bg-[#1a1a1a] rounded-lg p-1 gap-1 border border-gray-800">
+                <button onclick="switchMode('batch')" id="tab-batch" class="mode-active py-2 text-xs rounded transition flex items-center justify-center gap-2"><i class="fa-solid fa-layer-group"></i> Batch</button>
+                <button onclick="switchMode('assembler')" id="tab-assembler" class="mode-inactive py-2 text-xs rounded transition flex items-center justify-center gap-2"><i class="fa-solid fa-puzzle-piece"></i> Assembler</button>
+            </div>
+
+            <div class="space-y-2">
+                <div class="flex justify-between items-end"><label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">1. Assets</label><button onclick="clearFiles()" class="text-[10px] text-gray-500 hover:text-white transition">Clear All</button></div>
+                <div id="drop-zone" class="border-2 border-dashed border-gray-800 rounded-lg p-6 text-center transition hover:border-white hover:bg-gray-900 cursor-pointer group relative overflow-hidden bg-[#0F0F0F]">
+                    <input type="file" id="file-input" multiple accept="image/*" class="hidden">
+                    <div id="drop-content"><i class="fa-solid fa-images text-3xl text-gray-600 mb-2 group-hover:text-white transition"></i><p class="text-sm text-gray-300">Click or Drag images</p><p id="file-count" class="text-xs text-gray-500 mt-1">0 files loaded</p></div>
+                    <div id="asset-preview-row" class="hidden absolute bottom-0 left-0 right-0 h-10 bg-black/90 flex items-center px-2 gap-1 overflow-x-auto border-t border-gray-800"></div>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">2. Prompt</label>
+                <textarea id="prompt-input" rows="4" class="w-full bg-[#0F0F0F] border border-gray-800 rounded-lg p-3 text-sm focus:border-white focus:outline-none transition resize-none text-gray-200 placeholder-gray-600" placeholder="E.g., Place this product on a sleek marble table..."></textarea>
+                <div id="ref-image-container" class="hidden flex items-center gap-2 bg-gray-900 border border-gray-700 rounded p-2"><img id="ref-image-preview" src="" class="w-10 h-10 object-cover rounded border border-gray-600"><div class="flex-1 min-w-0"><p class="text-[10px] text-gray-400 truncate">Reference Environment</p><button onclick="clearRefImage()" class="text-[10px] text-red-400 hover:text-red-300">Remove</button></div></div><input type="file" id="ref-image-input" accept="image/*" class="hidden">
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="setPrompt('Professional studio photography, white infinity background, 4k')" class="text-xs bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white px-2 py-2 rounded border border-gray-800 transition truncate text-left"><i class="fa-solid fa-camera mr-1"></i> Studio</button>
+                    <button onclick="setPrompt('In a lush tropical garden with sunlight filtering through leaves')" class="text-xs bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white px-2 py-2 rounded border border-gray-800 transition truncate text-left"><i class="fa-solid fa-leaf mr-1"></i> Nature</button>
+                    <button onclick="setPrompt('High-end product photography, snowy winter landscape background, soft daylight, photorealistic, 4k')" class="text-xs bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white px-2 py-2 rounded border border-gray-800 transition truncate text-left"><i class="fa-regular fa-snowflake mr-1"></i> Snow</button>
+                    <button onclick="setPrompt('High-end product photography, vast desert landscape at sunset, warm lighting, sand dunes, photorealistic, 4k')" class="text-xs bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white px-2 py-2 rounded border border-gray-800 transition truncate text-left"><i class="fa-solid fa-sun mr-1"></i> Desert</button>
+                    <button onclick="setPrompt('Upscale luxury home interior, modern design, matching the aesthetic of the product, soft interior lighting, photorealistic, 4k')" class="text-xs bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white px-2 py-2 rounded border border-gray-800 transition truncate text-left"><i class="fa-solid fa-house mr-1"></i> Home</button>
+                    <button onclick="triggerRefImage()" class="text-xs bg-banana-900 hover:bg-white hover:text-black text-white border border-white/30 px-2 py-2 rounded transition truncate text-left font-bold"><i class="fa-regular fa-image mr-1"></i> Image Ref</button>
+                </div>
+            </div>
+
+            <div id="batch-settings" class="space-y-2">
+                <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">3. Settings</label>
+                <div class="flex items-center justify-between text-sm text-gray-400 bg-[#0F0F0F] p-2 rounded border border-gray-800"><span>Delay</span><select id="delay-select" class="bg-transparent border-none text-white text-xs rounded focus:ring-0 cursor-pointer"><option value="1000">Fast (1s)</option><option value="3000" selected>Safe (3s)</option><option value="5000">Slow (5s)</option></select></div>
+            </div>
+
+            <div class="mt-auto pt-4">
+                <div class="text-right mb-1"><span id="cost-label" class="text-[10px] text-gray-500">Cost: 0 Credits</span></div>
+                <button id="start-btn" onclick="executeRun()" disabled class="w-full bg-white hover:bg-gray-200 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-black font-bold py-3 rounded-lg shadow-lg shadow-white/10 transition flex items-center justify-center gap-2 uppercase tracking-wide"><i class="fa-solid fa-play"></i> <span id="btn-label">Run Batch</span></button>
+                <button id="download-all-btn" onclick="downloadAll()" class="hidden w-full mt-2 bg-gray-800 hover:bg-gray-700 text-white font-semibold py-2 rounded-lg transition flex items-center justify-center gap-2 border border-gray-700"><i class="fa-solid fa-file-zipper"></i> Download All</button>
+            </div>
+        </aside>
+
+        <main class="flex-1 bg-[#050505] relative flex flex-col">
+            <div id="progress-container" class="h-1 bg-gray-800 w-full hidden"><div id="progress-bar" class="h-full bg-white w-0 transition-all duration-300"></div></div>
+            <div class="h-10 border-b border-gray-800 flex items-center justify-between px-4 bg-black"><span id="status-text" class="text-xs text-gray-400 font-mono">Waiting for input...</span><span id="counter-text" class="text-xs font-mono text-white hidden">0/0</span></div>
+            <div id="results-grid" class="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 scroll-hide content-start">
+                <div id="empty-state" class="col-span-full h-96 flex flex-col items-center justify-center text-gray-700 opacity-50"><i class="fa-solid fa-cubes-stacked text-6xl mb-4"></i><p class="text-lg font-light tracking-wide">RESULTS WILL APPEAR HERE</p></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Templates -->
+    <template id="result-card-template">
+        <div class="glass-panel rounded-xl overflow-hidden flex flex-col group relative transition-all duration-300 h-auto min-h-[320px] border-gray-800 hover:border-gray-600">
+            <div class="relative bg-gray-900 aspect-square">
+                <img class="original-img absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity z-10 duration-300" src="" alt="Original">
+                <img class="generated-img absolute inset-0 w-full h-full object-cover" src="" alt="Generated">
+                <video class="generated-video absolute inset-0 w-full h-full object-cover hidden" controls loop muted playsinline></video>
+                <div class="loading-overlay absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20"><div class="loader mb-2"></div><span class="text-xs text-gray-300 font-mono">PROCESSING</span></div>
+                <div class="absolute top-2 left-2 z-30 opacity-0 group-hover:opacity-100 transition"><span class="bg-black/80 text-[10px] px-2 py-0.5 rounded-sm text-white border border-gray-700 uppercase tracking-wider">Original</span></div>
+            </div>
+            <div class="bg-black/60 border-t border-gray-800 p-3">
+                <div class="flex items-center justify-between mb-2"><span class="filename text-xs text-gray-400 truncate max-w-[100px] font-mono">file.jpg</span><div class="flex gap-2"><button class="motion-btn text-xs bg-gray-800 hover:bg-white hover:text-black px-2 py-1 rounded transition text-gray-300 hidden border border-gray-700" title="Generate Motion"><i class="fa-solid fa-film"></i></button><button class="download-btn text-gray-400 hover:text-white transition hidden" title="Download"><i class="fa-solid fa-download"></i></button></div></div>
+                <div class="motion-drawer hidden pt-2 border-t border-gray-800 mt-2">
+                    <div class="flex items-center justify-between mb-2"><p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Motion (Veo)</p><span class="text-[10px] text-gray-400">Cost: 1000 Credits</span></div>
+                    <div class="grid grid-cols-2 gap-1 mb-2"><label class="relative flex cursor-pointer"><input type="radio" name="motion-opt" value="Dolly Left" class="peer sr-only"><div class="text-[10px] bg-black border border-gray-800 text-gray-500 px-2 py-2 rounded w-full text-center hover:border-white hover:text-gray-300 peer-checked:bg-white peer-checked:text-black peer-checked:border-white transition">Dolly Left</div></label><label class="relative flex cursor-pointer"><input type="radio" name="motion-opt" value="Dolly Right" class="peer sr-only"><div class="text-[10px] bg-black border border-gray-800 text-gray-500 px-2 py-2 rounded w-full text-center hover:border-white hover:text-gray-300 peer-checked:bg-white peer-checked:text-black peer-checked:border-white transition">Dolly Right</div></label></div>
+                    <div class="flex items-center gap-1 mb-2"><label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="mock-mode-chk w-3 h-3 accent-white bg-black border-gray-700"><span class="text-[10px] text-gray-400">Simulate (0 Credits)</span></label></div>
+                    <button class="run-motion-btn w-full bg-gray-800 hover:bg-white hover:text-black text-gray-300 text-xs font-bold py-2 rounded transition border border-gray-700 uppercase">Generate Motion</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="assembler-card-template">
+        <div class="glass-panel rounded-xl overflow-hidden flex flex-col group relative border border-white/20 h-auto min-h-[400px]">
+            <div class="h-8 bg-black flex items-center px-3 border-b border-gray-800"><i class="fa-solid fa-puzzle-piece text-white text-xs mr-2"></i><span class="text-xs font-bold text-white uppercase tracking-wider">Assembled Scene</span></div>
+            <div class="relative bg-gray-900 aspect-video">
+                <img class="generated-img absolute inset-0 w-full h-full object-cover" src="" alt="Generated">
+                <video class="generated-video absolute inset-0 w-full h-full object-cover hidden" controls loop muted playsinline></video>
+                <div class="loading-overlay absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20"><div class="loader mb-2"></div><span class="text-xs text-gray-300 font-mono">ASSEMBLING SCENE</span></div>
+            </div>
+            <div class="bg-black/60 border-t border-gray-800 p-3">
+                <div class="flex items-center justify-between mb-2"><span class="filename text-xs text-gray-400 font-mono">Scene Composition</span><div class="flex gap-2"><button class="motion-btn text-xs bg-gray-800 hover:bg-white hover:text-black px-2 py-1 rounded transition text-gray-300 hidden border border-gray-700" title="Generate Motion"><i class="fa-solid fa-film"></i></button><button class="download-btn text-gray-400 hover:text-white transition hidden" title="Download"><i class="fa-solid fa-download"></i></button></div></div>
+                <div class="motion-drawer hidden pt-2 border-t border-gray-800 mt-2">
+                    <div class="flex items-center justify-between mb-2"><p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Motion (Veo)</p><span class="text-[10px] text-gray-400">Cost: 1000 Credits</span></div>
+                    <div class="grid grid-cols-2 gap-1 mb-2"><label class="relative flex cursor-pointer"><input type="radio" name="motion-opt" value="Dolly Left" class="peer sr-only"><div class="text-[10px] bg-black border border-gray-800 text-gray-500 px-2 py-2 rounded w-full text-center hover:border-white hover:text-gray-300 peer-checked:bg-white peer-checked:text-black peer-checked:border-white transition">Dolly Left</div></label><label class="relative flex cursor-pointer"><input type="radio" name="motion-opt" value="Dolly Right" class="peer sr-only"><div class="text-[10px] bg-black border border-gray-800 text-gray-500 px-2 py-2 rounded w-full text-center hover:border-white hover:text-gray-300 peer-checked:bg-white peer-checked:text-black peer-checked:border-white transition">Dolly Right</div></label></div>
+                    <div class="flex items-center gap-1 mb-2"><label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="mock-mode-chk w-3 h-3 accent-white bg-black border-gray-700"><span class="text-[10px] text-gray-400">Simulate (0 Credits)</span></label></div>
+                    <button class="run-motion-btn w-full bg-gray-800 hover:bg-white hover:text-black text-gray-300 text-xs font-bold py-2 rounded transition border border-gray-700 uppercase">Generate Motion</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Same JS as local, just no script tag changes -->
+    <script>
+        const COST_IMAGE=40,COST_VIDEO=1000,STARTING_BALANCE=10000,DAILY_VIDEO_LIMIT=10;
+        let userCredits=STARTING_BALANCE,dailyVideoCount=0,lastVideoDate=null,GLOBAL_API_KEY="";
+        function checkConfig(){if(typeof config!=='undefined'&&config.API_KEY){GLOBAL_API_KEY=config.API_KEY;return true;}return false;}
+        function initEconomy(){const c=localStorage.getItem('f_credits'),v=localStorage.getItem('f_daily'),d=localStorage.getItem('f_date'),today=new Date().toDateString();if(c)userCredits=parseInt(c);if(d!==today){dailyVideoCount=0;lastVideoDate=today;}else{dailyVideoCount=parseInt(v||0);lastVideoDate=d;}updateDashboard();}
+        function saveEconomy(){localStorage.setItem('f_credits',userCredits);localStorage.setItem('f_daily',dailyVideoCount);localStorage.setItem('f_date',lastVideoDate);}
+        function updateDashboard(){document.getElementById('credit-balance').textContent=userCredits.toLocaleString();document.getElementById('daily-limit-text').textContent=`${dailyVideoCount}/${DAILY_VIDEO_LIMIT}`;const p=(dailyVideoCount/DAILY_VIDEO_LIMIT)*100;const b=document.getElementById('daily-limit-bar');b.style.width=`${p}%`;if(dailyVideoCount>=DAILY_VIDEO_LIMIT){b.classList.remove('bg-blue-500');b.classList.add('bg-red-500');}else{b.classList.add('bg-blue-500');b.classList.remove('bg-red-500');}validateState();}
+        function deductCredits(a){if(userCredits>=a){userCredits-=a;saveEconomy();updateDashboard();return true;}return false;}
+        let devClicks=0;function handleDevReset(e){devClicks++;if(devClicks===3){if(confirm("Reset Credits?")){userCredits=10000;dailyVideoCount=0;saveEconomy();updateDashboard();}devClicks=0;}}
+        let currentMode='batch',fileQueue=[],processedResults=[],isProcessing=false,shouldStop=false,cardRegistry={},referenceImageFile=null;
+        const fileInput=document.getElementById('file-input'),dropZone=document.getElementById('drop-zone'),fileCountEl=document.getElementById('file-count'),assetPreviewRow=document.getElementById('asset-preview-row'),promptInput=document.getElementById('prompt-input'),startBtn=document.getElementById('start-btn'),btnLabel=document.getElementById('btn-label'),costLabel=document.getElementById('cost-label'),resultsGrid=document.getElementById('results-grid'),emptyState=document.getElementById('empty-state'),progressBar=document.getElementById('progress-bar'),progressContainer=document.getElementById('progress-container'),statusText=document.getElementById('status-text'),counterText=document.getElementById('counter-text'),downloadAllBtn=document.getElementById('download-all-btn'),batchSettings=document.getElementById('batch-settings'),refImageInput=document.getElementById('ref-image-input'),refImageContainer=document.getElementById('ref-image-container'),refImagePreview=document.getElementById('ref-image-preview');
+        window.addEventListener('load',()=>{checkConfig();initEconomy();});
+        function switchMode(m){if(isProcessing)return;currentMode=m;if(m==='batch'){document.getElementById('tab-batch').className="mode-active py-2 text-xs rounded transition flex items-center justify-center gap-2";document.getElementById('tab-assembler').className="mode-inactive py-2 text-xs rounded transition flex items-center justify-center gap-2";batchSettings.classList.remove('hidden');btnLabel.textContent="Run Batch";assetPreviewRow.classList.add('hidden');promptInput.placeholder="E.g., Place this product on a sleek marble table...";}else{document.getElementById('tab-assembler').className="mode-active py-2 text-xs rounded transition flex items-center justify-center gap-2";document.getElementById('tab-batch').className="mode-inactive py-2 text-xs rounded transition flex items-center justify-center gap-2";batchSettings.classList.add('hidden');btnLabel.textContent="Assemble Scene";assetPreviewRow.classList.remove('hidden');promptInput.placeholder="E.g., Arrange these furniture items in a cozy, sunlit living room...";}validateState();}
+        function triggerRefImage(){refImageInput.click();}
+        refImageInput.addEventListener('change',(e)=>{if(e.target.files[0]){referenceImageFile=e.target.files[0];const r=new FileReader();r.onload=(ev)=>{refImagePreview.src=ev.target.result;refImageContainer.classList.remove('hidden');};r.readAsDataURL(referenceImageFile);setPrompt("Swap out the couch in this environment with the product. Keep everything else the same.");}});
+        function clearRefImage(){referenceImageFile=null;refImageInput.value="";refImageContainer.classList.add('hidden');}
+        function clearFiles(){fileQueue=[];fileInput.value="";fileCountEl.textContent="0 files loaded";assetPreviewRow.innerHTML="";processedResults=[];resultsGrid.innerHTML="";resultsGrid.appendChild(emptyState);emptyState.style.display='flex';downloadAllBtn.classList.add('hidden');validateState();}
+        dropZone.addEventListener('click',()=>fileInput.click());dropZone.addEventListener('dragover',(e)=>{e.preventDefault();dropZone.classList.add('border-white','bg-gray-900');});dropZone.addEventListener('dragleave',()=>{dropZone.classList.remove('border-white','bg-gray-900');});dropZone.addEventListener('drop',(e)=>{e.preventDefault();dropZone.classList.remove('border-white','bg-gray-900');if(e.dataTransfer.files.length>0)handleFiles(e.dataTransfer.files);});fileInput.addEventListener('change',(e)=>{if(fileInput.files.length>0)handleFiles(fileInput.files);});promptInput.addEventListener('input',validateState);
+        function handleFiles(f){Array.from(f).filter(x=>x.type.startsWith('image/')).forEach(x=>fileQueue.push({file:x,id:Math.random().toString(36).substr(2,9)}));fileCountEl.textContent=`${fileQueue.length} files loaded`;renderThumbnails();validateState();}
+        function renderThumbnails(){assetPreviewRow.innerHTML='';fileQueue.forEach(x=>{const i=document.createElement('img');i.className="h-8 w-8 object-cover rounded border border-gray-600";const r=new FileReader();r.onload=(e)=>i.src=e.target.result;r.readAsDataURL(x.file);assetPreviewRow.appendChild(i);});}
+        function setPrompt(t){promptInput.value=t;validateState();}
+        function validateState(){const k=checkConfig(),f=fileQueue.length>0,p=promptInput.value.trim().length>0;let cost=0;if(f)cost=currentMode==='batch'?fileQueue.length*COST_IMAGE:COST_IMAGE;costLabel.textContent=`Cost: ${cost} Credits`;if(f&&p&&k&&userCredits>=cost){startBtn.disabled=false;startBtn.classList.remove('opacity-50');startBtn.innerHTML=`<i class="fa-solid fa-play"></i> <span id="btn-label">${currentMode==='batch'?'Run Batch':'Assemble'}</span>`;}else{startBtn.disabled=true;startBtn.classList.add('opacity-50');if(userCredits<cost)startBtn.innerHTML=`<i class="fa-solid fa-coins"></i> Insufficient Credits`;}}
+        function executeRun(){if(currentMode==='batch')runBatchMode();else runAssemblerMode();}
+        async function runBatchMode(){if(isProcessing)return;const cost=fileQueue.length*COST_IMAGE;if(!deductCredits(cost)){alert("Insufficient Credits!");return;}isProcessing=true;processedResults=[];setupProcessUI();const delay=parseInt(document.getElementById('delay-select').value);resultsGrid.innerHTML='';cardRegistry={};fileQueue.forEach(x=>{createBatchCard(x);cardRegistry[`card-${x.id}`]={files:[x.file],prompt:promptInput.value,mode:'batch'};});for(let i=0;i<fileQueue.length;i++){const item=fileQueue[i];updateStatus(`Processing ${i+1}/${fileQueue.length}`);updateProgress((i/fileQueue.length)*100);updateCardStatus(item.id,'processing');try{const files=referenceImageFile?[item.file,referenceImageFile]:[item.file];const blob=await callGemini(files,promptInput.value,'batch');updateCardResult(item.id,item.file,blob);processedResults.push({name:item.file.name,blob:blob});}catch(e){updateCardError(item.id,e.message);}if(i<fileQueue.length-1)await new Promise(r=>setTimeout(r,delay));}finalizeProcess("Batch Complete");}
+        async function runAssemblerMode(){if(isProcessing)return;if(!deductCredits(COST_IMAGE)){alert("Insufficient Credits!");return;}isProcessing=true;processedResults=[];setupProcessUI();resultsGrid.innerHTML='';cardRegistry={};const sid=Math.random().toString(36).substr(2,9);createAssemblerCard(sid);const files=fileQueue.map(x=>x.file);if(referenceImageFile)files.push(referenceImageFile);cardRegistry[`card-${sid}`]={files:files,prompt:promptInput.value,mode:'assembler'};updateStatus("Assembling...");try{const blob=await callGemini(files,promptInput.value,'assembler');updateAssemblerResult(sid,blob);processedResults.push({name:"assembled.jpg",blob:blob});finalizeProcess("Complete");}catch(e){updateCardError(sid,e.message);finalizeProcess("Failed");}}
+        function toggleMotionDrawer(id){document.getElementById(id).querySelector('.motion-drawer').classList.toggle('hidden');}
+        async function generateMotion(id){const card=document.getElementById(id),drawer=card.querySelector('.motion-drawer'),radio=drawer.querySelector('input[name="motion-opt"]:checked'),mock=drawer.querySelector('.mock-mode-chk').checked;if(!radio){alert("Select motion type");return;}if(!mock){if(dailyVideoCount>=DAILY_VIDEO_LIMIT){alert("Daily Limit Reached");return;}if(!deductCredits(COST_VIDEO)){alert("Insufficient Credits");return;}}if(!card.blob){alert("No image");return;}const type=radio.value,data=cardRegistry[id],btn=card.querySelector('.run-motion-btn');btn.textContent="Queuing...";btn.disabled=true;const nid=Math.random().toString(36).substr(2,9);if(data.mode==='assembler')createAssemblerCard(nid);else createBatchCard({id:nid,file:data.files[0]});const nc=document.getElementById(`card-${nid}`);if(nc){nc.querySelector(data.mode==='assembler'?'.text-xs.font-bold':'.filename').textContent=`${type} (${mock?'Sim':'Veo'})`;nc.querySelector('.motion-btn').remove();}cardRegistry[`card-${nid}`]=data;updateCardStatus(nid,'processing');try{let blob;if(mock){await new Promise(r=>setTimeout(r,2000));blob=card.blob;}else{blob=await callVeo(card.blob,type);dailyVideoCount++;saveEconomy();updateDashboard();}if(data.mode==='assembler')updateAssemblerResult(nid,blob,mock);else updateCardResult(nid,data.files[0],blob,mock);processedResults.push({name:`veo_${type}.mp4`,blob:blob});}catch(e){console.error(e);updateCardError(nid,e.message);}btn.textContent="Generate Motion";btn.disabled=false;drawer.classList.add('hidden');downloadAllBtn.classList.remove('hidden');}
+        async function callVeo(img,type){if(!GLOBAL_API_KEY)throw new Error("No Key");const b64=await new Promise(r=>{const fr=new FileReader();fr.onloadend=()=>r(fr.result.split(',')[1]);fr.readAsDataURL(img);});const prompt=type==="Dolly Left"?"Cinematic tracking shot, dolly left...":"Cinematic tracking shot, dolly right...";const url=`https://generativelanguage.googleapis.com/v1beta/models/veo-3.0-fast-generate-001:predict?key=${GLOBAL_API_KEY}`;const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({instances:[{prompt:prompt,image:{bytesBase64Encoded:b64}}],parameters:{sampleCount:1,aspectRatio:"16:9"}})});if(!res.ok)throw new Error(await res.text());const d=await res.json();const vid=d.predictions?.[0]?.bytesBase64Encoded;if(!vid)throw new Error("No video");return base64ToBlob(vid,'video/mp4');}
+        async function callGemini(files,prompt,mode){if(!GLOBAL_API_KEY)throw new Error("No Key");const parts=await Promise.all(files.map(async f=>({inlineData:{mimeType:f.type,data:await convertFileToBase64(f)}})));let pText=prompt;if(mode==='batch'&&files.length>1)pText=`Img 1 is Product. Img 2 is Ref. ${prompt}. Place product into ref environment.`;const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${GLOBAL_API_KEY}`;const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:pText},...parts]}],generationConfig:{responseModalities:["IMAGE"]}})});if(!res.ok)throw new Error(await res.text());const d=await res.json();const b64=d.candidates?.[0]?.content?.parts?.find(p=>p.inlineData)?.inlineData?.data;if(!b64)throw new Error("No image");return base64ToBlob(b64,'image/jpeg');}
+        function convertFileToBase64(f){return new Promise((r,j)=>{const rd=new FileReader();rd.onload=()=>r(rd.result.split(',')[1]);rd.readAsDataURL(f);});}
+        function base64ToBlob(b,m){const c=atob(b),n=new Uint8Array(c.length);for(let i=0;i<c.length;i++)n[i]=c.charCodeAt(i);return new Blob([n],{type:m});}
+        function setupProcessUI(){startBtn.innerHTML='Processing...';startBtn.disabled=true;emptyState.style.display='none';progressContainer.classList.remove('hidden');counterText.classList.remove('hidden');downloadAllBtn.classList.add('hidden');}
+        function finalizeProcess(m){isProcessing=false;validateState();updateStatus(m);progressContainer.classList.add('hidden');if(processedResults.length>0)downloadAllBtn.classList.remove('hidden');}
+        function updateStatus(m){statusText.textContent=m;}function updateProgress(p){progressBar.style.width=`${p}%`;}
+        function createBatchCard(x){const t=document.getElementById('result-card-template'),c=t.content.cloneNode(true),el=c.querySelector('.glass-panel');el.id=`card-${x.id}`;c.querySelector('.filename').textContent=x.file.name;const r=new FileReader();r.onload=(e)=>{el.querySelector('.original-img').src=e.target.result;el.querySelector('.generated-img').src=e.target.result;el.querySelector('.generated-img').style.filter="grayscale(100%) brightness(50%)";};r.readAsDataURL(x.file);setupCardBtns(c,x.id);resultsGrid.appendChild(c);}
+        function createAssemblerCard(id){const t=document.getElementById('assembler-card-template'),c=t.content.cloneNode(true),el=c.querySelector('.glass-panel');el.id=`card-${id}`;el.querySelector('.generated-img').style.display='none';setupCardBtns(c,id);resultsGrid.appendChild(c);}
+        function setupCardBtns(c,id){c.querySelector('.motion-btn').onclick=()=>toggleMotionDrawer(`card-${id}`);c.querySelector('.run-motion-btn').onclick=()=>generateMotion(`card-${id}`);}
+        function updateCardStatus(id,s){const c=document.getElementById(`card-${id}`);if(!c)return;if(s==='processing')c.querySelector('.loading-overlay').style.display='flex';}
+        function updateCardResult(id,f,blob,mock=false){const c=document.getElementById(`card-${id}`);if(!c)return;const url=URL.createObjectURL(blob),gi=c.querySelector('.generated-img'),gv=c.querySelector('.generated-video');if(blob.type.includes('video')&&!mock){gi.style.display='none';gv.src=url;gv.style.display='block';gv.classList.remove('hidden');c.querySelector('.motion-btn').style.display='none';}else{gi.src=url;gi.style.filter="none";gi.style.display='block';gv.style.display='none';if(mock){const b=document.createElement('div');b.className='absolute bottom-2 right-2 bg-yellow-500 text-black text-[10px] px-2 rounded';b.textContent='Sim';c.querySelector('.relative').appendChild(b);}}c.querySelector('.loading-overlay').style.display='none';c.blob=blob;const dl=c.querySelector('.download-btn');dl.classList.remove('hidden');dl.onclick=()=>saveAs(blob,`freedom_${f?f.name:'scene'}.${blob.type.includes('video')?'mp4':'jpg'}`);}
+        function updateAssemblerResult(id,blob,mock=false){updateCardResult(id,null,blob,mock);}
+        function updateCardError(id,m){const c=document.getElementById(`card-${id}`);if(c)c.querySelector('.loading-overlay').innerHTML=`<span class="text-xs text-red-400 px-2">${m}</span>`;}
+        async function downloadAll(){const z=new JSZip(),f=z.folder("Output");processedResults.forEach(x=>f.file(x.name,x.blob));saveAs(await z.generateAsync({type:"blob"}),"Output.zip");}
+    </script>
+</body>
+</html>
