@@ -14,7 +14,6 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&display=swap" rel="stylesheet">
     
-    <!-- ... (ALL CSS AND TAILWIND CONFIG IS SAME AS LOCAL VERSION) ... -->
     <script>
         tailwind.config = { theme: { extend: { fontFamily: { sans: ['Space Grotesk', 'sans-serif'] }, colors: { banana: { 900: '#000000' } } } } }
     </script>
@@ -27,8 +26,37 @@
         .mode-inactive { background-color: #262626; color: #888; }
     </style>
 </head>
-<!-- ... (ALL BODY HTML IS IDENTICAL TO LOCAL VERSION, COPY IT FROM ABOVE) ... -->
 <body class="h-screen flex flex-col overflow-hidden font-sans">
+
+    <!-- === LOGIN OVERLAY === -->
+    <!-- This sits on top of everything until unlocked -->
+    <div id="login-overlay" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="text-center space-y-6 p-8 max-w-md w-full">
+            <div class="w-20 h-20 bg-white rounded flex items-center justify-center text-black font-bold text-4xl mx-auto mb-6">
+                <i class="fa-solid fa-feather-pointed"></i>
+            </div>
+            <div>
+                <h1 class="text-3xl font-bold tracking-[0.3em] text-white uppercase mb-2">FREEDOM</h1>
+                <p class="text-gray-500 text-xs uppercase tracking-widest">Restricted Access</p>
+            </div>
+            
+            <div class="flex flex-col gap-4 pt-4">
+                <input type="password" id="access-code" 
+                    class="w-full bg-[#111] border border-gray-800 rounded-lg px-4 py-4 text-center text-white placeholder-gray-600 focus:border-white focus:outline-none transition font-mono text-lg tracking-widest"
+                    placeholder="ENTER PASSCODE" onkeyup="if(event.key==='Enter') checkAccess()">
+                
+                <button onclick="checkAccess()" 
+                    class="w-full bg-white hover:bg-gray-200 text-black font-bold py-4 rounded-lg transition uppercase tracking-wider text-sm">
+                    Unlock Studio
+                </button>
+            </div>
+            <p id="login-error" class="text-red-500 text-xs uppercase tracking-wider opacity-0 transition-opacity">Invalid Passcode</p>
+        </div>
+        <div class="absolute bottom-8 text-gray-800 text-[10px]">
+            SECURE CLIENT ACCESS v1.0
+        </div>
+    </div>
+
     <!-- Header -->
     <header class="h-16 border-b border-gray-800 bg-black flex items-center justify-between px-6 shrink-0 z-10">
         <div class="flex items-center gap-3 select-none" onclick="handleDevReset(event)" title="Triple click to reset credits">
@@ -144,7 +172,6 @@
         </div>
     </template>
 
-    <!-- Same JS as local, just no script tag changes -->
     <script>
         const COST_IMAGE=40,COST_VIDEO=1000,STARTING_BALANCE=10000,DAILY_VIDEO_LIMIT=10;
         let userCredits=STARTING_BALANCE,dailyVideoCount=0,lastVideoDate=null,GLOBAL_API_KEY="";
@@ -156,7 +183,34 @@
         let devClicks=0;function handleDevReset(e){devClicks++;if(devClicks===3){if(confirm("Reset Credits?")){userCredits=10000;dailyVideoCount=0;saveEconomy();updateDashboard();}devClicks=0;}}
         let currentMode='batch',fileQueue=[],processedResults=[],isProcessing=false,shouldStop=false,cardRegistry={},referenceImageFile=null;
         const fileInput=document.getElementById('file-input'),dropZone=document.getElementById('drop-zone'),fileCountEl=document.getElementById('file-count'),assetPreviewRow=document.getElementById('asset-preview-row'),promptInput=document.getElementById('prompt-input'),startBtn=document.getElementById('start-btn'),btnLabel=document.getElementById('btn-label'),costLabel=document.getElementById('cost-label'),resultsGrid=document.getElementById('results-grid'),emptyState=document.getElementById('empty-state'),progressBar=document.getElementById('progress-bar'),progressContainer=document.getElementById('progress-container'),statusText=document.getElementById('status-text'),counterText=document.getElementById('counter-text'),downloadAllBtn=document.getElementById('download-all-btn'),batchSettings=document.getElementById('batch-settings'),refImageInput=document.getElementById('ref-image-input'),refImageContainer=document.getElementById('ref-image-container'),refImagePreview=document.getElementById('ref-image-preview');
-        window.addEventListener('load',()=>{checkConfig();initEconomy();});
+        
+        // --- LOGIN LOGIC ---
+        function checkAccess() {
+            const code = document.getElementById('access-code').value;
+            const error = document.getElementById('login-error');
+            // HARDCODED PASSWORD
+            if (code === "FREEDOM2025") { 
+                localStorage.setItem('freedom_access_granted', 'true');
+                const overlay = document.getElementById('login-overlay');
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => overlay.style.display = 'none', 500);
+            } else {
+                error.classList.remove('opacity-0');
+                document.getElementById('access-code').classList.add('border-red-500');
+                setTimeout(() => document.getElementById('access-code').classList.remove('border-red-500'), 2000);
+            }
+        }
+
+        window.addEventListener('load',()=>{
+            // Check Login
+            if (localStorage.getItem('freedom_access_granted') === 'true') {
+                document.getElementById('login-overlay').style.display = 'none';
+            }
+            checkConfig();
+            initEconomy();
+        });
+
+        // ... Rest of the application logic ...
         function switchMode(m){if(isProcessing)return;currentMode=m;if(m==='batch'){document.getElementById('tab-batch').className="mode-active py-2 text-xs rounded transition flex items-center justify-center gap-2";document.getElementById('tab-assembler').className="mode-inactive py-2 text-xs rounded transition flex items-center justify-center gap-2";batchSettings.classList.remove('hidden');btnLabel.textContent="Run Batch";assetPreviewRow.classList.add('hidden');promptInput.placeholder="E.g., Place this product on a sleek marble table...";}else{document.getElementById('tab-assembler').className="mode-active py-2 text-xs rounded transition flex items-center justify-center gap-2";document.getElementById('tab-batch').className="mode-inactive py-2 text-xs rounded transition flex items-center justify-center gap-2";batchSettings.classList.add('hidden');btnLabel.textContent="Assemble Scene";assetPreviewRow.classList.remove('hidden');promptInput.placeholder="E.g., Arrange these furniture items in a cozy, sunlit living room...";}validateState();}
         function triggerRefImage(){refImageInput.click();}
         refImageInput.addEventListener('change',(e)=>{if(e.target.files[0]){referenceImageFile=e.target.files[0];const r=new FileReader();r.onload=(ev)=>{refImagePreview.src=ev.target.result;refImageContainer.classList.remove('hidden');};r.readAsDataURL(referenceImageFile);setPrompt("Swap out the couch in this environment with the product. Keep everything else the same.");}});
