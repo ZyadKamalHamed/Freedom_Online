@@ -251,17 +251,20 @@
                     
                     // Brand (Top)
                     const brandText = document.getElementById('promo-brand-text').value.toUpperCase();
-                    ctx.font = 'bold 50px "Space Grotesk", sans-serif';
+                    // Using Bold 700 to match reference
+                    ctx.font = '700 50px "Space Grotesk", sans-serif'; 
                     ctx.fillText(brandText, halfW + (halfW/2), 100);
 
                     // Main Offer (Center)
                     const offerText = document.getElementById('promo-main-text').value.toUpperCase();
-                    ctx.font = 'bold 140px "Space Grotesk", sans-serif';
+                    // Large Bold
+                    ctx.font = '700 140px "Space Grotesk", sans-serif';
                     ctx.fillText(offerText, halfW + (halfW/2), height / 2 + 30);
 
                     // Subtext (Bottom)
                     const subText = document.getElementById('promo-sub-text').value.toUpperCase();
-                    ctx.font = '40px "Space Grotesk", sans-serif';
+                    // Medium weight, smaller
+                    ctx.font = '500 40px "Space Grotesk", sans-serif';
                     ctx.fillText(subText, halfW + (halfW/2), height - 80);
 
                     // Export
