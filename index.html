@@ -24,37 +24,22 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .mode-active { background-color: #FFFFFF; color: #000000; font-weight: bold; }
         .mode-inactive { background-color: #262626; color: #888; }
+        input[type="color"] { -webkit-appearance: none; border: none; width: 24px; height: 24px; border-radius: 50%; overflow: hidden; padding: 0; }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: none; }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden font-sans">
 
     <!-- === LOGIN OVERLAY === -->
-    <!-- This sits on top of everything until unlocked -->
     <div id="login-overlay" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center transition-opacity duration-500">
         <div class="text-center space-y-6 p-8 max-w-md w-full">
-            <div class="w-20 h-20 bg-white rounded flex items-center justify-center text-black font-bold text-4xl mx-auto mb-6">
-                <i class="fa-solid fa-feather-pointed"></i>
-            </div>
-            <div>
-                <h1 class="text-3xl font-bold tracking-[0.3em] text-white uppercase mb-2">FREEDOM</h1>
-                <p class="text-gray-500 text-xs uppercase tracking-widest">Restricted Access</p>
-            </div>
-            
-            <div class="flex flex-col gap-4 pt-4">
-                <input type="password" id="access-code" 
-                    class="w-full bg-[#111] border border-gray-800 rounded-lg px-4 py-4 text-center text-white placeholder-gray-600 focus:border-white focus:outline-none transition font-mono text-lg tracking-widest"
-                    placeholder="ENTER PASSCODE" onkeyup="if(event.key==='Enter') checkAccess()">
-                
-                <button onclick="checkAccess()" 
-                    class="w-full bg-white hover:bg-gray-200 text-black font-bold py-4 rounded-lg transition uppercase tracking-wider text-sm">
-                    Unlock Studio
-                </button>
-            </div>
+            <div class="w-20 h-20 bg-white rounded flex items-center justify-center text-black font-bold text-4xl mx-auto mb-6"><i class="fa-solid fa-feather-pointed"></i></div>
+            <div><h1 class="text-3xl font-bold tracking-[0.3em] text-white uppercase mb-2">FREEDOM</h1><p class="text-gray-500 text-xs uppercase tracking-widest">Restricted Access</p></div>
+            <div class="flex flex-col gap-4 pt-4"><input type="password" id="access-code" class="w-full bg-[#111] border border-gray-800 rounded-lg px-4 py-4 text-center text-white placeholder-gray-600 focus:border-white focus:outline-none transition font-mono text-lg tracking-widest" placeholder="ENTER PASSCODE" onkeyup="if(event.key==='Enter') checkAccess()"><button onclick="checkAccess()" class="w-full bg-white hover:bg-gray-200 text-black font-bold py-4 rounded-lg transition uppercase tracking-wider text-sm">Unlock Studio</button></div>
             <p id="login-error" class="text-red-500 text-xs uppercase tracking-wider opacity-0 transition-opacity">Invalid Passcode</p>
         </div>
-        <div class="absolute bottom-8 text-gray-800 text-[10px]">
-            SECURE CLIENT ACCESS v1.0
-        </div>
+        <div class="absolute bottom-8 text-gray-800 text-[10px]">SECURE CLIENT ACCESS v1.0</div>
     </div>
 
     <!-- Header -->
@@ -81,11 +66,13 @@
     <!-- Main Workspace -->
     <div class="flex flex-1 overflow-hidden">
         <aside class="w-80 bg-black border-r border-gray-800 flex flex-col p-4 gap-6 overflow-y-auto z-10">
+            <!-- Mode Switcher -->
             <div class="grid grid-cols-2 bg-[#1a1a1a] rounded-lg p-1 gap-1 border border-gray-800">
                 <button onclick="switchMode('batch')" id="tab-batch" class="mode-active py-2 text-xs rounded transition flex items-center justify-center gap-2"><i class="fa-solid fa-layer-group"></i> Batch</button>
                 <button onclick="switchMode('assembler')" id="tab-assembler" class="mode-inactive py-2 text-xs rounded transition flex items-center justify-center gap-2"><i class="fa-solid fa-puzzle-piece"></i> Assembler</button>
             </div>
 
+            <!-- Upload -->
             <div class="space-y-2">
                 <div class="flex justify-between items-end"><label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">1. Assets</label><button onclick="clearFiles()" class="text-[10px] text-gray-500 hover:text-white transition">Clear All</button></div>
                 <div id="drop-zone" class="border-2 border-dashed border-gray-800 rounded-lg p-6 text-center transition hover:border-white hover:bg-gray-900 cursor-pointer group relative overflow-hidden bg-[#0F0F0F]">
@@ -95,6 +82,7 @@
                 </div>
             </div>
 
+            <!-- Prompt -->
             <div class="space-y-2">
                 <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">2. Prompt</label>
                 <textarea id="prompt-input" rows="4" class="w-full bg-[#0F0F0F] border border-gray-800 rounded-lg p-3 text-sm focus:border-white focus:outline-none transition resize-none text-gray-200 placeholder-gray-600" placeholder="E.g., Place this product on a sleek marble table..."></textarea>
@@ -109,11 +97,39 @@
                 </div>
             </div>
 
+            <!-- PROMOTIONAL OFFER SECTION (NEW) -->
+            <div class="space-y-2 border-t border-gray-800 pt-2">
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="promo-toggle" class="w-3 h-3 accent-white bg-black border-gray-700" onchange="togglePromoOptions()">
+                        <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Promotional Offer</span>
+                    </label>
+                    <input type="color" id="promo-bg-color" value="#8BA5A8" title="Background Color" class="cursor-pointer opacity-50 pointer-events-none transition" disabled>
+                </div>
+                
+                <div id="promo-options" class="space-y-2 hidden pl-2 border-l border-gray-800 ml-1">
+                    <div>
+                        <label class="text-[10px] text-gray-500 uppercase">Offer Text</label>
+                        <input type="text" id="promo-main-text" value="40% OFF" class="w-full bg-[#111] border border-gray-800 rounded px-2 py-1 text-xs text-white focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-gray-500 uppercase">Subtext</label>
+                        <input type="text" id="promo-sub-text" value="MATTRESS AND BEDDING" class="w-full bg-[#111] border border-gray-800 rounded px-2 py-1 text-xs text-white focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-gray-500 uppercase">Brand</label>
+                        <input type="text" id="promo-brand-text" value="FREEDOM" class="w-full bg-[#111] border border-gray-800 rounded px-2 py-1 text-xs text-white focus:outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings -->
             <div id="batch-settings" class="space-y-2">
                 <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">3. Settings</label>
                 <div class="flex items-center justify-between text-sm text-gray-400 bg-[#0F0F0F] p-2 rounded border border-gray-800"><span>Delay</span><select id="delay-select" class="bg-transparent border-none text-white text-xs rounded focus:ring-0 cursor-pointer"><option value="1000">Fast (1s)</option><option value="3000" selected>Safe (3s)</option><option value="5000">Slow (5s)</option></select></div>
             </div>
 
+            <!-- Action -->
             <div class="mt-auto pt-4">
                 <div class="text-right mb-1"><span id="cost-label" class="text-[10px] text-gray-500">Cost: 0 Credits</span></div>
                 <button id="start-btn" onclick="executeRun()" disabled class="w-full bg-white hover:bg-gray-200 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-black font-bold py-3 rounded-lg shadow-lg shadow-white/10 transition flex items-center justify-center gap-2 uppercase tracking-wide"><i class="fa-solid fa-play"></i> <span id="btn-label">Run Batch</span></button>
@@ -121,6 +137,7 @@
             </div>
         </aside>
 
+        <!-- Main Content -->
         <main class="flex-1 bg-[#050505] relative flex flex-col">
             <div id="progress-container" class="h-1 bg-gray-800 w-full hidden"><div id="progress-bar" class="h-full bg-white w-0 transition-all duration-300"></div></div>
             <div class="h-10 border-b border-gray-800 flex items-center justify-between px-4 bg-black"><span id="status-text" class="text-xs text-gray-400 font-mono">Waiting for input...</span><span id="counter-text" class="text-xs font-mono text-white hidden">0/0</span></div>
@@ -184,11 +201,82 @@
         let currentMode='batch',fileQueue=[],processedResults=[],isProcessing=false,shouldStop=false,cardRegistry={},referenceImageFile=null;
         const fileInput=document.getElementById('file-input'),dropZone=document.getElementById('drop-zone'),fileCountEl=document.getElementById('file-count'),assetPreviewRow=document.getElementById('asset-preview-row'),promptInput=document.getElementById('prompt-input'),startBtn=document.getElementById('start-btn'),btnLabel=document.getElementById('btn-label'),costLabel=document.getElementById('cost-label'),resultsGrid=document.getElementById('results-grid'),emptyState=document.getElementById('empty-state'),progressBar=document.getElementById('progress-bar'),progressContainer=document.getElementById('progress-container'),statusText=document.getElementById('status-text'),counterText=document.getElementById('counter-text'),downloadAllBtn=document.getElementById('download-all-btn'),batchSettings=document.getElementById('batch-settings'),refImageInput=document.getElementById('ref-image-input'),refImageContainer=document.getElementById('ref-image-container'),refImagePreview=document.getElementById('ref-image-preview');
         
+        // --- PROMO UI LOGIC ---
+        function togglePromoOptions() {
+            const chk = document.getElementById('promo-toggle');
+            const opts = document.getElementById('promo-options');
+            const color = document.getElementById('promo-bg-color');
+            if (chk.checked) {
+                opts.classList.remove('hidden');
+                color.classList.remove('opacity-50', 'pointer-events-none');
+                color.disabled = false;
+            } else {
+                opts.classList.add('hidden');
+                color.classList.add('opacity-50', 'pointer-events-none');
+                color.disabled = true;
+            }
+        }
+
+        // --- COMPOSITING ENGINE ---
+        function createPromoComposite(imageBlob) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Create high-res canvas (e.g. 2:1 aspect ratio like reference)
+                    const canvas = document.createElement('canvas');
+                    const width = 1600;
+                    const height = 800; 
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+
+                    // 1. Draw Image (Left Half)
+                    // We maintain aspect ratio and crop to fit left half (0,0 to width/2, height)
+                    const halfW = width / 2;
+                    // Draw image centered in left half
+                    const ratio = Math.max(halfW / img.width, height / img.height);
+                    const centerShift_x = (halfW - img.width * ratio) / 2;
+                    const centerShift_y = (height - img.height * ratio) / 2;
+                    ctx.drawImage(img, 0, 0, img.width, img.height, 
+                                  centerShift_x, centerShift_y, img.width * ratio, img.height * ratio);
+
+                    // 2. Draw Color Block (Right Half)
+                    const bgColor = document.getElementById('promo-bg-color').value;
+                    ctx.fillStyle = bgColor;
+                    ctx.fillRect(halfW, 0, halfW, height);
+
+                    // 3. Draw Text
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.textAlign = 'center';
+                    
+                    // Brand (Top)
+                    const brandText = document.getElementById('promo-brand-text').value.toUpperCase();
+                    ctx.font = 'bold 50px "Space Grotesk", sans-serif';
+                    ctx.fillText(brandText, halfW + (halfW/2), 100);
+
+                    // Main Offer (Center)
+                    const offerText = document.getElementById('promo-main-text').value.toUpperCase();
+                    ctx.font = 'bold 140px "Space Grotesk", sans-serif';
+                    ctx.fillText(offerText, halfW + (halfW/2), height / 2 + 30);
+
+                    // Subtext (Bottom)
+                    const subText = document.getElementById('promo-sub-text').value.toUpperCase();
+                    ctx.font = '40px "Space Grotesk", sans-serif';
+                    ctx.fillText(subText, halfW + (halfW/2), height - 80);
+
+                    // Export
+                    canvas.toBlob((blob) => {
+                        resolve(blob);
+                    }, 'image/jpeg', 0.95);
+                };
+                img.src = URL.createObjectURL(imageBlob);
+            });
+        }
+
         // --- LOGIN LOGIC ---
         function checkAccess() {
             const code = document.getElementById('access-code').value;
             const error = document.getElementById('login-error');
-            // HARDCODED PASSWORD
             if (code === "FREEDOM2025") { 
                 localStorage.setItem('freedom_access_granted', 'true');
                 const overlay = document.getElementById('login-overlay');
@@ -202,7 +290,6 @@
         }
 
         window.addEventListener('load',()=>{
-            // Check Login
             if (localStorage.getItem('freedom_access_granted') === 'true') {
                 document.getElementById('login-overlay').style.display = 'none';
             }
@@ -210,7 +297,7 @@
             initEconomy();
         });
 
-        // ... Rest of the application logic ...
+        // ... Standard Logic ...
         function switchMode(m){if(isProcessing)return;currentMode=m;if(m==='batch'){document.getElementById('tab-batch').className="mode-active py-2 text-xs rounded transition flex items-center justify-center gap-2";document.getElementById('tab-assembler').className="mode-inactive py-2 text-xs rounded transition flex items-center justify-center gap-2";batchSettings.classList.remove('hidden');btnLabel.textContent="Run Batch";assetPreviewRow.classList.add('hidden');promptInput.placeholder="E.g., Place this product on a sleek marble table...";}else{document.getElementById('tab-assembler').className="mode-active py-2 text-xs rounded transition flex items-center justify-center gap-2";document.getElementById('tab-batch').className="mode-inactive py-2 text-xs rounded transition flex items-center justify-center gap-2";batchSettings.classList.add('hidden');btnLabel.textContent="Assemble Scene";assetPreviewRow.classList.remove('hidden');promptInput.placeholder="E.g., Arrange these furniture items in a cozy, sunlit living room...";}validateState();}
         function triggerRefImage(){refImageInput.click();}
         refImageInput.addEventListener('change',(e)=>{if(e.target.files[0]){referenceImageFile=e.target.files[0];const r=new FileReader();r.onload=(ev)=>{refImagePreview.src=ev.target.result;refImageContainer.classList.remove('hidden');};r.readAsDataURL(referenceImageFile);setPrompt("Swap out the couch in this environment with the product. Keep everything else the same.");}});
@@ -222,8 +309,69 @@
         function setPrompt(t){promptInput.value=t;validateState();}
         function validateState(){const k=checkConfig(),f=fileQueue.length>0,p=promptInput.value.trim().length>0;let cost=0;if(f)cost=currentMode==='batch'?fileQueue.length*COST_IMAGE:COST_IMAGE;costLabel.textContent=`Cost: ${cost} Credits`;if(f&&p&&k&&userCredits>=cost){startBtn.disabled=false;startBtn.classList.remove('opacity-50');startBtn.innerHTML=`<i class="fa-solid fa-play"></i> <span id="btn-label">${currentMode==='batch'?'Run Batch':'Assemble'}</span>`;}else{startBtn.disabled=true;startBtn.classList.add('opacity-50');if(userCredits<cost)startBtn.innerHTML=`<i class="fa-solid fa-coins"></i> Insufficient Credits`;}}
         function executeRun(){if(currentMode==='batch')runBatchMode();else runAssemblerMode();}
-        async function runBatchMode(){if(isProcessing)return;const cost=fileQueue.length*COST_IMAGE;if(!deductCredits(cost)){alert("Insufficient Credits!");return;}isProcessing=true;processedResults=[];setupProcessUI();const delay=parseInt(document.getElementById('delay-select').value);resultsGrid.innerHTML='';cardRegistry={};fileQueue.forEach(x=>{createBatchCard(x);cardRegistry[`card-${x.id}`]={files:[x.file],prompt:promptInput.value,mode:'batch'};});for(let i=0;i<fileQueue.length;i++){const item=fileQueue[i];updateStatus(`Processing ${i+1}/${fileQueue.length}`);updateProgress((i/fileQueue.length)*100);updateCardStatus(item.id,'processing');try{const files=referenceImageFile?[item.file,referenceImageFile]:[item.file];const blob=await callGemini(files,promptInput.value,'batch');updateCardResult(item.id,item.file,blob);processedResults.push({name:item.file.name,blob:blob});}catch(e){updateCardError(item.id,e.message);}if(i<fileQueue.length-1)await new Promise(r=>setTimeout(r,delay));}finalizeProcess("Batch Complete");}
-        async function runAssemblerMode(){if(isProcessing)return;if(!deductCredits(COST_IMAGE)){alert("Insufficient Credits!");return;}isProcessing=true;processedResults=[];setupProcessUI();resultsGrid.innerHTML='';cardRegistry={};const sid=Math.random().toString(36).substr(2,9);createAssemblerCard(sid);const files=fileQueue.map(x=>x.file);if(referenceImageFile)files.push(referenceImageFile);cardRegistry[`card-${sid}`]={files:files,prompt:promptInput.value,mode:'assembler'};updateStatus("Assembling...");try{const blob=await callGemini(files,promptInput.value,'assembler');updateAssemblerResult(sid,blob);processedResults.push({name:"assembled.jpg",blob:blob});finalizeProcess("Complete");}catch(e){updateCardError(sid,e.message);finalizeProcess("Failed");}}
+        
+        async function runBatchMode(){
+            if(isProcessing)return;
+            const cost=fileQueue.length*COST_IMAGE;
+            if(!deductCredits(cost)){alert("Insufficient Credits!");return;}
+            isProcessing=true;processedResults=[];setupProcessUI();
+            const delay=parseInt(document.getElementById('delay-select').value);
+            resultsGrid.innerHTML='';cardRegistry={};
+            const isPromo = document.getElementById('promo-toggle').checked;
+
+            fileQueue.forEach(x=>{createBatchCard(x);cardRegistry[`card-${x.id}`]={files:[x.file],prompt:promptInput.value,mode:'batch'};});
+            
+            for(let i=0;i<fileQueue.length;i++){
+                const item=fileQueue[i];
+                updateStatus(`Processing ${i+1}/${fileQueue.length}`);
+                updateProgress((i/fileQueue.length)*100);
+                updateCardStatus(item.id,'processing');
+                try{
+                    const files=referenceImageFile?[item.file,referenceImageFile]:[item.file];
+                    let blob=await callGemini(files,promptInput.value,'batch');
+                    
+                    // PROMO INJECTION POINT
+                    if(isPromo) {
+                        updateStatus("Applying Promo Layout...");
+                        blob = await createPromoComposite(blob);
+                    }
+
+                    updateCardResult(item.id,item.file,blob);
+                    processedResults.push({name:item.file.name,blob:blob});
+                }catch(e){updateCardError(item.id,e.message);}
+                if(i<fileQueue.length-1)await new Promise(r=>setTimeout(r,delay));
+            }
+            finalizeProcess("Batch Complete");
+        }
+
+        async function runAssemblerMode(){
+            if(isProcessing)return;
+            if(!deductCredits(COST_IMAGE)){alert("Insufficient Credits!");return;}
+            isProcessing=true;processedResults=[];setupProcessUI();
+            resultsGrid.innerHTML='';cardRegistry={};
+            const sid=Math.random().toString(36).substr(2,9);
+            createAssemblerCard(sid);
+            const files=fileQueue.map(x=>x.file);
+            if(referenceImageFile)files.push(referenceImageFile);
+            const isPromo = document.getElementById('promo-toggle').checked;
+
+            cardRegistry[`card-${sid}`]={files:files,prompt:promptInput.value,mode:'assembler'};
+            updateStatus("Assembling...");
+            try{
+                let blob=await callGemini(files,promptInput.value,'assembler');
+                
+                // PROMO INJECTION POINT
+                if(isPromo) {
+                    updateStatus("Applying Promo Layout...");
+                    blob = await createPromoComposite(blob);
+                }
+
+                updateAssemblerResult(sid,blob);
+                processedResults.push({name:"assembled.jpg",blob:blob});
+                finalizeProcess("Complete");
+            }catch(e){updateCardError(sid,e.message);finalizeProcess("Failed");}
+        }
+
         function toggleMotionDrawer(id){document.getElementById(id).querySelector('.motion-drawer').classList.toggle('hidden');}
         async function generateMotion(id){const card=document.getElementById(id),drawer=card.querySelector('.motion-drawer'),radio=drawer.querySelector('input[name="motion-opt"]:checked'),mock=drawer.querySelector('.mock-mode-chk').checked;if(!radio){alert("Select motion type");return;}if(!mock){if(dailyVideoCount>=DAILY_VIDEO_LIMIT){alert("Daily Limit Reached");return;}if(!deductCredits(COST_VIDEO)){alert("Insufficient Credits");return;}}if(!card.blob){alert("No image");return;}const type=radio.value,data=cardRegistry[id],btn=card.querySelector('.run-motion-btn');btn.textContent="Queuing...";btn.disabled=true;const nid=Math.random().toString(36).substr(2,9);if(data.mode==='assembler')createAssemblerCard(nid);else createBatchCard({id:nid,file:data.files[0]});const nc=document.getElementById(`card-${nid}`);if(nc){nc.querySelector(data.mode==='assembler'?'.text-xs.font-bold':'.filename').textContent=`${type} (${mock?'Sim':'Veo'})`;nc.querySelector('.motion-btn').remove();}cardRegistry[`card-${nid}`]=data;updateCardStatus(nid,'processing');try{let blob;if(mock){await new Promise(r=>setTimeout(r,2000));blob=card.blob;}else{blob=await callVeo(card.blob,type);dailyVideoCount++;saveEconomy();updateDashboard();}if(data.mode==='assembler')updateAssemblerResult(nid,blob,mock);else updateCardResult(nid,data.files[0],blob,mock);processedResults.push({name:`veo_${type}.mp4`,blob:blob});}catch(e){console.error(e);updateCardError(nid,e.message);}btn.textContent="Generate Motion";btn.disabled=false;drawer.classList.add('hidden');downloadAllBtn.classList.remove('hidden');}
         async function callVeo(img,type){if(!GLOBAL_API_KEY)throw new Error("No Key");const b64=await new Promise(r=>{const fr=new FileReader();fr.onloadend=()=>r(fr.result.split(',')[1]);fr.readAsDataURL(img);});const prompt=type==="Dolly Left"?"Cinematic tracking shot, dolly left...":"Cinematic tracking shot, dolly right...";const url=`https://generativelanguage.googleapis.com/v1beta/models/veo-3.0-fast-generate-001:predict?key=${GLOBAL_API_KEY}`;const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({instances:[{prompt:prompt,image:{bytesBase64Encoded:b64}}],parameters:{sampleCount:1,aspectRatio:"16:9"}})});if(!res.ok)throw new Error(await res.text());const d=await res.json();const vid=d.predictions?.[0]?.bytesBase64Encoded;if(!vid)throw new Error("No video");return base64ToBlob(vid,'video/mp4');}
